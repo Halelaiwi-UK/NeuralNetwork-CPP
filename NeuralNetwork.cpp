@@ -118,17 +118,24 @@ void NeuralNetwork::backPropagate(const std::vector<double>& actual, const std::
     }
 }
 
-
-void NeuralNetwork::train(std::vector<double>& input, const std::vector<double>& expected, int epochs) {
+void NeuralNetwork::train(std::vector<std::vector<double>>& input, std::vector<std::vector<double>>& expected, int epochs) {
+    total_error = 0;
     for (std::size_t epoch = 0; epoch < epochs; epoch++) {
-        this->forwardPass(input);
-        this->backPropagate(this->output, expected, 0.1);
-        auto error = UtilityFunctions::MSE(this->output, expected);
-        auto total_error = std::reduce(std::execution::seq, error.begin(), error.end(), 0.0);
-        std::cout << "error: " << total_error << std::endl;
+        std::cout << "Epoch: " << epoch << std::endl;
+        std::vector<double> EpochError;
+        for (int i = 0; i < input.size() / 100; i++){
+            this->forwardPass(input[i]);
+            this->backPropagate(this->output, expected[i], 0.1);
+            auto error = UtilityFunctions::MSE(this->output, expected[i]);
+            auto total_error = std::reduce(std::execution::seq, error.begin(), error.end(), 0.0);
+            EpochError.push_back(total_error);
+        }
+        std::cout << "Epoch #" << epoch <<   "error: " << std::reduce(std::execution::seq, EpochError.begin(), EpochError.end(), 0.0) << std::endl;
     }
-    auto error = UtilityFunctions::MSE(this->output, expected);
-    auto total_error = std::reduce(std::execution::seq, error.begin(), error.end(), 0.0);
+    for (auto &actual : expected) {
+        auto error = UtilityFunctions::MSE(this->output, actual);
+        total_error += std::reduce(std::execution::seq, error.begin(), error.end(), 0.0);
+    }
     std::cout << "Final total error: " << total_error << std::endl;
 }
 

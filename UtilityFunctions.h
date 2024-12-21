@@ -5,7 +5,12 @@
 #ifndef UTILITYFUNCTIONS_H
 #define UTILITYFUNCTIONS_H
 #include <vector>
+#include <string>
 
+struct ImageData {
+    std::vector<double> label;        // One-hot encoded label (size 10)
+    std::vector<double> pixels;       // Pixel values (0-255)
+};
 
 class UtilityFunctions {
 public:
@@ -16,6 +21,7 @@ public:
     //  double sum_vector = std::reduce(std::execution::seq, vec.begin(), vec.end(), 0.0);
     static std::vector<double> MSE_derivative(const std::vector<double>& actual, const std::vector<double>&  expected);
     static double SigmoidDerivative(double value);
+    static std::vector<ImageData> loadData(const std::string& filename, bool isTest);
 };
 
 

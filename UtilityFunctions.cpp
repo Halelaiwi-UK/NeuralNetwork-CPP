@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <execution>
+#include <fstream>
 
 std::vector<double> UtilityFunctions::multiplyMatrixVector(
     const std::vector<std::vector<double>> &matrix,
@@ -92,12 +93,6 @@ std::vector<double> UtilityFunctions::MSE_derivative(const std::vector<double> &
             "Vector dimensions mismatch: arg1 size = " + std::to_string(actual.size()) +
             ", arg2 size = " + std::to_string(expected.size()));
     }
-    // std::vector<double> result(actual.size());
-    // std::transform(std::execution::par,
-    //     actual.begin(), actual.end(), expected.begin(), result.begin(),
-    //     [](const double val1, const double val2) {
-    //             return 2 * (val1 - val2);
-    //     });
     std::vector<double> result(actual.size());
     std::transform(std::execution::par,
     actual.begin(), actual.end(), expected.begin(), result.begin(),
@@ -110,4 +105,62 @@ std::vector<double> UtilityFunctions::MSE_derivative(const std::vector<double> &
 double UtilityFunctions::SigmoidDerivative(const double value) {
     const double sigmoid = 1.0 / (1.0 + exp(-value));
     return sigmoid * (1 - sigmoid);
+}
+
+std::vector<double> oneHotEncode(int label, int numClasses = 10) {
+    if (label < 0 || label >= numClasses) {
+        throw std::invalid_argument("Invalid label value for one-hot encoding.");
+    }
+
+    std::vector<double> oneHot(numClasses, 0);
+    oneHot[label] = 1;
+    return oneHot;
+}
+
+std::vector<ImageData> UtilityFunctions::loadData(const std::string& filename, bool isTest) {
+    std::vector<ImageData> dataset; // Vector to store all image data
+    std::ifstream file(filename);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("Unable to open file: " + filename);
+    }
+
+    // Skip the first line (header)
+    std::string header;
+    if (!std::getline(file, header)) {
+        throw std::runtime_error("File is empty or unable to read header: " + filename);
+    }
+
+
+    std::string line;
+    while (std::getline(file, line)) {
+        std::istringstream lineStream(line);
+        ImageData imageData;
+
+        // Read the label (first value in the line) ignore if testing data
+        std::string token;
+        if (!isTest) {
+            if (std::getline(lineStream, token, ',')) {
+                int labelValue = std::stoi(token); // Convert label to integer
+                imageData.label = oneHotEncode(labelValue);
+            }
+        }
+
+        // Read pixel values (remaining values in the line)
+        while (std::getline(lineStream, token, ',')) {
+            if (!token.empty()) {
+                try {
+                    double pixelValue = std::stod(token); // Convert pixel to double
+                    imageData.pixels.push_back(pixelValue);
+                } catch (const std::invalid_argument& e) {
+                    std::cerr << "Invalid pixel value: " << token << std::endl;
+                    throw;
+                }
+            }
+        }
+        dataset.push_back(imageData); // Add the parsed data to the dataset
+    }
+
+    file.close();
+    return dataset;
 }
