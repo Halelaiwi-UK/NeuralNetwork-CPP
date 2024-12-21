@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <execution>
+#include <omp.h>
 
 NeuralNetwork::NeuralNetwork(const int input_size): last_layer_size(input_size), total_error(0),
                                                     gen(std::random_device{}()) {
@@ -92,7 +93,7 @@ void NeuralNetwork::backPropagate(const std::vector<double>& actual, const std::
         // Gradients for weights and biases
         weightGradients[layer] = std::vector<std::vector<double>>(weightMatrix.size(), std::vector<double>(weightMatrix[0].size(), 0.0));
         biasGradients[layer] = std::vector<double>(biasVectors[layer].size(), 0.0);
-
+        #pragma omp parallel for
         for (std::size_t neuron = 0; neuron < weightMatrix.size(); ++neuron) {
             double delta = prevLayerError[neuron] * UtilityFunctions::SigmoidDerivative(layerOutput[neuron]);
 
@@ -117,12 +118,13 @@ void NeuralNetwork::backPropagate(const std::vector<double>& actual, const std::
         }
     }
 }
-
 void NeuralNetwork::train(std::vector<std::vector<double>>& input, std::vector<std::vector<double>>& expected, int epochs) {
     total_error = 0;
     for (std::size_t epoch = 0; epoch < epochs; epoch++) {
         std::cout << "Epoch: " << epoch << std::endl;
         std::vector<double> EpochError;
+        std::shuffle(input.begin(), input.end(), gen);
+        #pragma omp parallel for
         for (int i = 0; i < input.size() / 100; i++){
             this->forwardPass(input[i]);
             this->backPropagate(this->output, expected[i], 0.1);
@@ -130,11 +132,14 @@ void NeuralNetwork::train(std::vector<std::vector<double>>& input, std::vector<s
             auto total_error = std::reduce(std::execution::seq, error.begin(), error.end(), 0.0);
             EpochError.push_back(total_error);
         }
-        std::cout << "Epoch #" << epoch <<   "error: " << std::reduce(std::execution::seq, EpochError.begin(), EpochError.end(), 0.0) << std::endl;
+        std::cout << "Epoch #" << epoch <<   " error: " << std::reduce(std::execution::seq, EpochError.begin(), EpochError.end(), 0.0) << std::endl;
     }
-    for (auto &actual : expected) {
-        auto error = UtilityFunctions::MSE(this->output, actual);
-        total_error += std::reduce(std::execution::seq, error.begin(), error.end(), 0.0);
+
+    #pragma omp parallel for reduction(+:total_error)
+    for (std::size_t i = 0; i < expected.size(); i++) {
+        auto error = UtilityFunctions::MSE(this->output, expected[i]);
+        double partial_error = std::reduce(std::execution::seq, error.begin(), error.end(), 0.0);
+        total_error += partial_error;
     }
     std::cout << "Final total error: " << total_error << std::endl;
 }
@@ -159,7 +164,7 @@ void NeuralNetwork::forwardPass(const std::vector<double>& input) {
     for (int i = 0; i < weightsMatrices.size(); ++i){
         prev = UtilityFunctions::multiplyMatrixVector(weightsMatrices[i], prev);
         prev = UtilityFunctions::VectorAddition(prev, biasVectors[i]);
-        prev = UtilityFunctions::SigmoidVector(prev);
+        prev = UtilityFunctions::ReluVector(prev);
         layerOutputs.push_back(prev); // Store outputs of each layer
     }
     this->output = prev;

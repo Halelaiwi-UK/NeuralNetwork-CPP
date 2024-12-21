@@ -27,6 +27,9 @@ CMAKE_BUILD_TYPE:STRING=Debug
 //Enable colored diagnostics throughout.
 CMAKE_COLOR_DIAGNOSTICS:BOOL=ON
 
+//CUDA compiler
+CMAKE_CUDA_COMPILER:STRING=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/nvcc.exe
+
 //CXX compiler
 CMAKE_CXX_COMPILER:FILEPATH=C:/Program Files/JetBrains/CLion 2024.2.2/bin/mingw/bin/g++.exe
 
@@ -243,6 +246,15 @@ CMAKE_TAPI:FILEPATH=CMAKE_TAPI-NOTFOUND
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
 //Value Computed by CMake
+MyProject_BINARY_DIR:STATIC=C:/Users/asus-pc/CLionProjects/NeuralNetwork/cmake-build-debug
+
+//Value Computed by CMake
+MyProject_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+MyProject_SOURCE_DIR:STATIC=C:/Users/asus-pc/CLionProjects/NeuralNetwork
+
+//Value Computed by CMake
 NeuralNetwork_BINARY_DIR:STATIC=C:/Users/asus-pc/CLionProjects/NeuralNetwork/cmake-build-debug
 
 //Value Computed by CMake
@@ -274,6 +286,8 @@ CMAKE_COMMAND:INTERNAL=C:/Program Files/JetBrains/CLion 2024.2.2/bin/cmake/win/x
 CMAKE_CPACK_COMMAND:INTERNAL=C:/Program Files/JetBrains/CLion 2024.2.2/bin/cmake/win/x64/bin/cpack.exe
 //Path to ctest program executable.
 CMAKE_CTEST_COMMAND:INTERNAL=C:/Program Files/JetBrains/CLion 2024.2.2/bin/cmake/win/x64/bin/ctest.exe
+//ADVANCED property for variable: CMAKE_CUDA_COMPILER
+CMAKE_CUDA_COMPILER-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_CXX_COMPILER
 CMAKE_CXX_COMPILER-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_CXX_COMPILER_AR

@@ -55,6 +55,16 @@ std::vector<double> UtilityFunctions::SigmoidVector(const std::vector<double>& v
     return result;
 }
 
+std::vector<double> UtilityFunctions::ReluVector(const std::vector<double> &vec) {
+    std::vector<double> result(vec.size());
+    std::transform(std::execution::par,
+        vec.begin(), vec.end(), result.begin(),
+        [](const double value) {
+            return value > 0 ? value : 0;
+        });
+    return result;
+}
+
 std::vector<double> UtilityFunctions::VectorAddition(const std::vector<double>& vec1, const std::vector<double>&  vec2) {
     if (vec1.size() != vec2.size()) {
         throw std::invalid_argument(

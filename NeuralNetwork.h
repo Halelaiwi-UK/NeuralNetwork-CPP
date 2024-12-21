@@ -30,7 +30,7 @@ public:
 
     void backPropagate(const std::vector<double>& actual, const std::vector<double>& expected, double learning_rate);
 
-    void train(std::vector<std::vector<double>>& input, std::vector<std::vector<double>>& expected, int epochs);
+    void train(std::vector<std::vector<double>> &input, std::vector<std::vector<double>> &expected, int epochs);
 
     std::vector<double> predict(const std::vector<double> &input);
 };
