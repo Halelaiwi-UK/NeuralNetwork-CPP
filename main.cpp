@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <NeuralNetwork.h>
 #include <UtilityFunctions.h>
@@ -59,11 +60,15 @@ int main() {
         trainPixels.push_back(data.pixels); // Extract pixels
         trainLabels.push_back(data.label); // Extract labels
     }
+    for (auto& pixels : trainPixels) {
+        std::transform(pixels.begin(), pixels.end(), pixels.begin(),
+                       [](double val) { return val / 255.0; });
+    }
     auto network = NeuralNetwork(trainPixels[0].size()); // Initialize network and input layer
-    network.setLearningRate(0.001);
-    network.add_layer(256);
+    network.setLearningRate(0.1);
     network.add_layer(128); // hidden layer
     network.add_layer(64);
+    network.add_layer(32);
     network.add_layer(trainLabels[0].size()); // Output layer
     network.train(trainPixels, trainLabels, 100);
 
@@ -79,8 +84,7 @@ int main() {
     // for (int i = 0; i < testPixels.size(); i++) {
     //     auto result = network.predict(testPixels[i]);
     //     // Find the index of the maximum element
-    //     auto maxElementIt = std::max_element(result.begin(), result.end());
-    //     int maxIndex = std::distance(result.begin(), maxElementIt);
+    //    int maxIndex = std::distance(result.begin(), std::max_element(result.begin(), result.end()));
     //     predictions.push_back(maxIndex);
     //     std::cout << "Prediction : " << maxIndex << std::endl;
     //

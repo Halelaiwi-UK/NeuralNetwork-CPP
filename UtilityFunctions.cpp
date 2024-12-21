@@ -65,6 +65,10 @@ std::vector<double> UtilityFunctions::ReluVector(const std::vector<double> &vec)
     return result;
 }
 
+double UtilityFunctions::ReluDerivative(double value) {
+    return value > 0 ? 1 : 0;
+}
+
 std::vector<double> UtilityFunctions::VectorAddition(const std::vector<double>& vec1, const std::vector<double>&  vec2) {
     if (vec1.size() != vec2.size()) {
         throw std::invalid_argument(
@@ -173,4 +177,29 @@ std::vector<ImageData> UtilityFunctions::loadData(const std::string& filename, b
 
     file.close();
     return dataset;
+}
+
+std::vector<double> UtilityFunctions::Softmax(const std::vector<double>& input) {
+    std::vector<double> output(input.size());
+    double maxInput = *std::max_element(input.begin(), input.end()); // Shift by max value
+    double sum = 0.0;
+
+    for (double val : input) {
+        sum += std::exp(val - maxInput);
+    }
+
+    for (std::size_t i = 0; i < input.size(); ++i) {
+        output[i] = std::exp(input[i] - maxInput) / sum;
+    }
+
+    return output;
+}
+
+double UtilityFunctions::CrossEntropy(const std::vector<double>& predicted, const std::vector<double>& actual) {
+    double loss = 0.0;
+    for (size_t i = 0; i < predicted.size(); ++i) {
+        double clamped_pred = std::clamp(predicted[i], 1e-9, 1.0); // Clamp predictions
+        loss -= actual[i] * std::log(clamped_pred);
+    }
+    return loss;
 }

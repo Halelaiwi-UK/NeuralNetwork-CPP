@@ -24,24 +24,23 @@ void NeuralNetwork::add_layer(const int layer_size) {
 
     const int cols = this->last_layer_size;
     const int rows = layer_size;
-    // construct element in place and push it to weights vector
     weightsMatrices.emplace_back(rows, std::vector<double>(cols));
     biasVectors.emplace_back(rows, 0.0);
 
-    // auto& modifies original (access address), auto creates and modifies copy
     auto& layerMatrix = weightsMatrices.back();
     auto& layerBiases = biasVectors.back();
-    std::uniform_real_distribution<> distrib(-1.0, 1.0);
+    std::normal_distribution<> distrib(0.0, std::sqrt(1.0 / cols)); // He Initialization
 
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             layerMatrix[i][j] = distrib(gen);
         }
-        layerBiases[i] = distrib(gen);
+        layerBiases[i] = 0.0; // Initialize biases similarly
     }
 
     last_layer_size = layer_size;
 }
+
 
 void NeuralNetwork::printStructure() {
     if (this->weightsMatrices.empty()) {
@@ -95,9 +94,14 @@ void NeuralNetwork::backPropagate(const std::vector<double>& actual, const std::
         biasGradients[layer] = std::vector<double>(biasVectors[layer].size(), 0.0);
         #pragma omp parallel for
         for (std::size_t neuron = 0; neuron < weightMatrix.size(); ++neuron) {
-            double delta = prevLayerError[neuron] * UtilityFunctions::SigmoidDerivative(layerOutput[neuron]);
+            double gradient_clip_threshold = 5.0;
+            double delta = (layer == weightsMatrices.size() - 1)
+                               ? outputError[neuron]
+                               : prevLayerError[neuron] * UtilityFunctions::SigmoidDerivative(layerOutput[neuron]);
 
-            // Compute gradients for weights and biases
+            // Clip gradients
+            delta = std::max(std::min(delta, gradient_clip_threshold), -gradient_clip_threshold);
+            #pragma omp parallel for
             for (std::size_t weight = 0; weight < weightMatrix[neuron].size(); ++weight) {
                 weightGradients[layer][neuron][weight] = delta * layerOutput[weight];
                 currentLayerError[weight] += delta * weightMatrix[neuron][weight];
@@ -120,19 +124,19 @@ void NeuralNetwork::backPropagate(const std::vector<double>& actual, const std::
 }
 void NeuralNetwork::train(std::vector<std::vector<double>>& input, std::vector<std::vector<double>>& expected, int epochs) {
     total_error = 0;
+#   pragma omp parallel for
     for (std::size_t epoch = 0; epoch < epochs; epoch++) {
         std::cout << "Epoch: " << epoch << std::endl;
         std::vector<double> EpochError;
-        std::shuffle(input.begin(), input.end(), gen);
         #pragma omp parallel for
         for (int i = 0; i < input.size() / 100; i++){
             this->forwardPass(input[i]);
             this->backPropagate(this->output, expected[i], 0.1);
             auto error = UtilityFunctions::MSE(this->output, expected[i]);
-            auto total_error = std::reduce(std::execution::seq, error.begin(), error.end(), 0.0);
-            EpochError.push_back(total_error);
+            EpochError.push_back(std::reduce(error.begin(), error.end(), 0.0));
         }
-        std::cout << "Epoch #" << epoch <<   " error: " << std::reduce(std::execution::seq, EpochError.begin(), EpochError.end(), 0.0) << std::endl;
+        double epochTotalError = std::reduce(EpochError.begin(), EpochError.end(), 0.0);
+        std::cout << "Epoch #" << epoch << " error: " << epochTotalError << std::endl;
     }
 
     #pragma omp parallel for reduction(+:total_error)
@@ -161,11 +165,15 @@ void NeuralNetwork::forwardPass(const std::vector<double>& input) {
     this->input = input;
     this->layerOutputs.clear();
     auto prev = input;
-    for (int i = 0; i < weightsMatrices.size(); ++i){
+    for (int i = 0; i < weightsMatrices.size(); ++i) {
         prev = UtilityFunctions::multiplyMatrixVector(weightsMatrices[i], prev);
         prev = UtilityFunctions::VectorAddition(prev, biasVectors[i]);
-        prev = UtilityFunctions::ReluVector(prev);
-        layerOutputs.push_back(prev); // Store outputs of each layer
+        if (i == weightsMatrices.size() - 1) {
+            prev = UtilityFunctions::Softmax(prev); // Apply Softmax for output layer
+        } else {
+            prev = UtilityFunctions::SigmoidVector(prev);
+        }
+        layerOutputs.push_back(prev);
     }
     this->output = prev;
 }
