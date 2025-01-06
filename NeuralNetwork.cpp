@@ -4,10 +4,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <execution>
-#include <omp.h>
 
-NeuralNetwork::NeuralNetwork(const int input_size): last_layer_size(input_size), total_error(0),
-                                                    gen(std::random_device{}()) {
+NeuralNetwork::NeuralNetwork(const unsigned long long input_size): gen(std::random_device{}()), last_layer_size(input_size),
+                                                    total_error(0) {
     if (input_size <= 0) {
         throw std::invalid_argument("Input size must be positive.");
     }
@@ -17,19 +16,19 @@ void NeuralNetwork::setLearningRate(const double value) {
     this->learning_rate = value > 0 ? value : 0.01;
 }
 
-void NeuralNetwork::add_layer(const int layer_size) {
+void NeuralNetwork::add_layer(const unsigned long long layer_size) {
     if (layer_size <= 0) {
         throw std::invalid_argument("Layer size must be bigger than 0");
     }
 
-    const int cols = this->last_layer_size;
-    const int rows = layer_size;
+    const unsigned long long cols = this->last_layer_size;
+    const unsigned long long rows = layer_size;
     weightsMatrices.emplace_back(rows, std::vector<double>(cols));
     biasVectors.emplace_back(rows, 0.0);
 
     auto& layerMatrix = weightsMatrices.back();
     auto& layerBiases = biasVectors.back();
-    std::normal_distribution<> distrib(0.0, std::sqrt(1.0 / cols)); // He Initialization
+    std::normal_distribution<> distrib(0.0, std::sqrt(1.0 / static_cast<double>(cols))); // He Initialization
 
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
@@ -81,17 +80,17 @@ void NeuralNetwork::backPropagate(const std::vector<double>& actual, const std::
     std::vector<std::vector<std::vector<double>>> weightGradients(weightsMatrices.size());
     std::vector<std::vector<double>> biasGradients(biasVectors.size());
 
-    // Backpropagate through layers
+    // Backpropagation through layers
     std::vector<double> prevLayerError = outputError;
 
-    for (int layer = weightsMatrices.size() - 1; layer >= 0; --layer) {
+    for (long long layer = static_cast<long long>(weightsMatrices.size()) - 1; layer >= 0; layer--) {
         const auto& weightMatrix = weightsMatrices[layer];
         std::vector<double> currentLayerError(weightMatrix[0].size(), 0.0);
         std::vector<double> layerOutput = layer == 0 ? input : layerOutputs[layer - 1];
 
         // Gradients for weights and biases
-        weightGradients[layer] = std::vector<std::vector<double>>(weightMatrix.size(), std::vector<double>(weightMatrix[0].size(), 0.0));
-        biasGradients[layer] = std::vector<double>(biasVectors[layer].size(), 0.0);
+        weightGradients[layer] = std::vector(weightMatrix.size(), std::vector(weightMatrix[0].size(), 0.0));
+        biasGradients[layer] = std::vector(biasVectors[layer].size(), 0.0);
         #pragma omp parallel for
         for (std::size_t neuron = 0; neuron < weightMatrix.size(); ++neuron) {
             double gradient_clip_threshold = 5.0;
@@ -122,9 +121,8 @@ void NeuralNetwork::backPropagate(const std::vector<double>& actual, const std::
         }
     }
 }
-void NeuralNetwork::train(std::vector<std::vector<double>>& input, std::vector<std::vector<double>>& expected, int epochs) {
+void NeuralNetwork::train(const std::vector<std::vector<double>>& input, std::vector<std::vector<double>>& expected, int epochs) {
     total_error = 0;
-#   pragma omp parallel for
     for (std::size_t epoch = 0; epoch < epochs; epoch++) {
         std::cout << "Epoch: " << epoch << std::endl;
         std::vector<double> EpochError;
@@ -140,9 +138,9 @@ void NeuralNetwork::train(std::vector<std::vector<double>>& input, std::vector<s
     }
 
     #pragma omp parallel for reduction(+:total_error)
-    for (std::size_t i = 0; i < expected.size(); i++) {
-        auto error = UtilityFunctions::MSE(this->output, expected[i]);
-        double partial_error = std::reduce(std::execution::seq, error.begin(), error.end(), 0.0);
+    for (const auto & i : expected) {
+        auto error = UtilityFunctions::MSE(this->output, i);
+        const double partial_error = std::reduce(std::execution::seq, error.begin(), error.end(), 0.0);
         total_error += partial_error;
     }
     std::cout << "Final total error: " << total_error << std::endl;

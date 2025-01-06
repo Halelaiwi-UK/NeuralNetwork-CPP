@@ -13,24 +13,24 @@ private:
     std::vector<double> input;
     std::mt19937 gen;
     double learning_rate = 0.01;
-    int last_layer_size;
+    unsigned long long last_layer_size;
     double total_error;
 
 public:
-    explicit NeuralNetwork(int input_size);
+    explicit NeuralNetwork(unsigned long long input_size);
 
     void setLearningRate(double value);
     void addWeightLayer(const std::vector<std::vector<double>>& weights);
 
     void forwardPass(const std::vector<double>& input);
 
-    void add_layer(int layer_size);
+    void add_layer(unsigned long long layer_size);
 
     void printStructure();
 
     void backPropagate(const std::vector<double>& actual, const std::vector<double>& expected, double learning_rate);
 
-    void train(std::vector<std::vector<double>> &input, std::vector<std::vector<double>> &expected, int epochs);
+    void train(const std::vector<std::vector<double>> &input, std::vector<std::vector<double>> &expected, int epochs);
 
     std::vector<double> predict(const std::vector<double> &input);
 };

@@ -47,22 +47,22 @@ void writeResultsToCSV(const std::string& filename, const std::vector<int>& pred
 }
 
 int main() {
-    std::string trainDataPath = "train.csv"; // Replace with your file path
+    const std::string trainDataPath = "train.csv"; // Replace with your file path
     std::vector<ImageData> trainData = UtilityFunctions::loadData(trainDataPath, false);
-    // std::string testDataPath = "test.csv"; // Replace with your file path
-    // std::vector<ImageData> testData = UtilityFunctions::loadData(testDataPath, true);
+    const std::string testDataPath = "test.csv"; // Replace with your file path
+    std::vector<ImageData> testData = UtilityFunctions::loadData(testDataPath, true);
 
     // Separate train data into two vectors: one for pixels, one for labels
     std::vector<std::vector<double>> trainPixels;
     std::vector<std::vector<double>> trainLabels;
 
-    for (const auto& data : trainData) {
-        trainPixels.push_back(data.pixels); // Extract pixels
-        trainLabels.push_back(data.label); // Extract labels
+    for (const auto&[label, pixels] : trainData) {
+        trainPixels.push_back(pixels); // Extract pixels
+        trainLabels.push_back(label); // Extract labels
     }
     for (auto& pixels : trainPixels) {
-        std::transform(pixels.begin(), pixels.end(), pixels.begin(),
-                       [](double val) { return val / 255.0; });
+        std::ranges::transform(pixels, pixels.begin(),
+                               [](const double val) { return val / 255.0; });
     }
     auto network = NeuralNetwork(trainPixels[0].size()); // Initialize network and input layer
     network.setLearningRate(0.1);
@@ -70,25 +70,29 @@ int main() {
     network.add_layer(64);
     network.add_layer(32);
     network.add_layer(trainLabels[0].size()); // Output layer
-    network.train(trainPixels, trainLabels, 100);
+    network.train(trainPixels, trainLabels, 10);
 
     // Separate train data into two vectors: one for pixels, one for labels
-    // std::vector<std::vector<double>> testPixels;
-    // std::vector<std::vector<double>> testLabels;
-    // for (const auto& data : testData) {
-    //     testPixels.push_back(data.pixels); // Extract pixels
-    //     testLabels.push_back(data.label); // Extract labels
-    // }
+    std::vector<std::vector<double>> testPixels;
+    std::vector<std::vector<double>> testLabels;
+    int num = 0;
+    for (const auto& data : testData) {
+        testPixels.push_back(data.pixels); // Extract pixels
+        testLabels.push_back(data.label); // Extract labels
+        if (num++ > 10) {
+            break;
+        }
+    }
     //
-    // std::vector<int> predictions;
-    // for (int i = 0; i < testPixels.size(); i++) {
-    //     auto result = network.predict(testPixels[i]);
-    //     // Find the index of the maximum element
-    //    int maxIndex = std::distance(result.begin(), std::max_element(result.begin(), result.end()));
-    //     predictions.push_back(maxIndex);
-    //     std::cout << "Prediction : " << maxIndex << std::endl;
-    //
-    // }
+    std::vector<long long int> predictions;
+    for (const auto & testPixel : testPixels) {
+        auto result = network.predict(testPixel);
+        // Find the index of the maximum element
+        long long int maxIndex = std::distance(result.begin(), std::ranges::max_element(result));
+        predictions.push_back(maxIndex);
+        std::cout << "Prediction : " << maxIndex << std::endl;
+
+    }
     // writeResultsToCSV("results.csv", predictions);
     return 0;
 }

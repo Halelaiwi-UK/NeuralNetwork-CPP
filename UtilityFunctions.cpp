@@ -111,7 +111,7 @@ std::vector<double> UtilityFunctions::MSE_derivative(const std::vector<double> &
     std::transform(std::execution::par,
     actual.begin(), actual.end(), expected.begin(), result.begin(),
     [&](const double val1, const double val2) {
-        return (2 * (val1 - val2)) / actual.size(); // Normalize by vector size
+        return (2 * (val1 - val2)) / static_cast<double>(actual.size()); // Normalize by vector size
     });
     return result;
 }
@@ -167,7 +167,7 @@ std::vector<ImageData> UtilityFunctions::loadData(const std::string& filename, b
                     double pixelValue = std::stod(token); // Convert pixel to double
                     imageData.pixels.push_back(pixelValue);
                 } catch (const std::invalid_argument& e) {
-                    std::cerr << "Invalid pixel value: " << token << std::endl;
+                    std::cerr << "Invalid pixel value: " << token << ". Error: " << e.what() << std::endl;
                     throw;
                 }
             }
@@ -181,7 +181,7 @@ std::vector<ImageData> UtilityFunctions::loadData(const std::string& filename, b
 
 std::vector<double> UtilityFunctions::Softmax(const std::vector<double>& input) {
     std::vector<double> output(input.size());
-    double maxInput = *std::max_element(input.begin(), input.end()); // Shift by max value
+    double maxInput = *std::ranges::max_element(input); // Shift by max value
     double sum = 0.0;
 
     for (double val : input) {
