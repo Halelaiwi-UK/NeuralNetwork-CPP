@@ -76,9 +76,9 @@ int main() {
     std::vector<std::vector<double>> testPixels;
     std::vector<std::vector<double>> testLabels;
     int num = 0;
-    for (const auto& data : testData) {
-        testPixels.push_back(data.pixels); // Extract pixels
-        testLabels.push_back(data.label); // Extract labels
+    for (const auto&[label, pixels] : testData) {
+        testPixels.push_back(pixels); // Extract pixels
+        testLabels.push_back(label); // Extract labels
         if (num++ > 10) {
             break;
         }
